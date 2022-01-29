@@ -1,8 +1,8 @@
 # stores-app
 A simple Mobile Application to collect Images from Stores.
 
-<div style="width:360px;max-width:100%;"><div style="height:0;padding-bottom:216.94%;position:relative;"><iframe width="360" height="781" style="position:absolute;top:0;left:0;width:100%;height:100%;" frameBorder="0" src="https://imgflip.com/embed/634unh"></iframe></div><p><a href="https://imgflip.com/gif/634unh">via Imgflip</a></p></div>
-<br/><br/>
+![634unh](https://user-images.githubusercontent.com/34113569/151647878-296c3c43-aed0-4974-af17-5e08315a6c90.gif)
+
 
 Cases handled<br/>
 1. If there are no stores found based on the search query user enters, show a vector and text saying "Oops! No stores found!"</br>
