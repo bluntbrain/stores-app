@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "747397575694",
+    "firebase_url": "https://stores-app-b0c5d-default-rtdb.firebaseio.com",
+    "project_id": "stores-app-b0c5d",
+    "storage_bucket": "stores-app-b0c5d.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:747397575694:android:bb4ff985fad20e0bc9385f",
+        "android_client_info": {
+          "package_name": "com.storesapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "747397575694-pmd5hh90hne43hr6qv166f01cpu3a82i.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD86i1KYZxiz3a_0RBUAyWimLK_momlKhU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "747397575694-pmd5hh90hne43hr6qv166f01cpu3a82i.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
