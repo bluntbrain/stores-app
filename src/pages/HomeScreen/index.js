@@ -5,8 +5,15 @@ import {
   View,
   Image,
   FlatList,
+  TouchableOpacity,
+  ToastAndroid,
 } from 'react-native';
 import React, {useEffect} from 'react';
+import {BottomSheet} from 'react-native-elements';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import RNFS from 'react-native-fs';
+import {launchImageLibrary, launchCamera} from 'react-native-image-picker';
+import storage from '@react-native-firebase/storage';
 
 //icons
 import logoutIcon from '../../assets/icons/logout.png';
@@ -14,12 +21,15 @@ import uploadIcon from '../../assets/icons/upload.png';
 import shopIcon from '../../assets/icons/shop.png';
 import nostores from '../../assets/images/nostores.png';
 
-import Fuse from "fuse.js";
+import Fuse from 'fuse.js';
 import {Searchbar} from 'react-native-paper';
 import database from '@react-native-firebase/database';
 import Loader from '../../components/Loader';
 export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = React.useState('');
+  const [searchedLeads, setSearchedLeads] = React.useState([]);
+  const [showBottomSheet, setShowBottomSheet] = React.useState(false);
+  const [selectedId, setSelectedId] = React.useState('');
   const [storesArray, setStoresArray] = React.useState([]);
   const [isLoading, setIsLoading] = React.useState(true);
 
@@ -28,90 +38,229 @@ export default function HomeScreen() {
       .ref('/stores')
       .once('value')
       .then(snapshot => {
+        let dummyArray = snapshot.val();
         // console.log('User data: ', snapshot.val());
         var result = Object.keys(snapshot.val()).map(key => [
           key,
           snapshot.val()[key],
         ]);
-        console.log('User data: ', result.length);
-        setStoresArray(result);
-        setIsLoading(false)
+        let allStores = Object.values(snapshot.val());
+        allStores.forEach((item, index) => {
+          item.id = result[index][0];
+        });
+
+        console.log('User data: ', allStores);
+        setStoresArray(allStores);
+        setIsLoading(false);
       });
-      setTimeout(() => {
-        setIsLoading(false)
-      }, 3000);
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 3000);
   }, []);
 
-  const getAllMyStores = () => {};
-
-  const onChange = (searchText) => {
-    const options = {
-    isCaseSensitive: false,
-    threshold: 0.3,
-    // keys: [
-    //   "status",
-    //   "ordered_items.product_name",
-    //   "ordered_items.subscription_plan.plan_name",
-    //   "ordered_items.subscription_plan.service_name",
-    // ],
+  const onPickImage = () => {
+    console.log('onPickImage');
+    let options = {
+      mediaType: 'photo',
+      maxWidth: 500,
+      maxHeight: 500,
+      quality: 0.8,
+    };
+    try {
+      launchImageLibrary(options, res => {
+        if (
+          res?.assets != undefined &&
+          res?.assets != null &&
+          res?.assets[0]?.uri != null
+        ) {
+          console.log(res?.assets[0]?.uri);
+          uploadImage(res?.assets[0]?.uri);
+        }
+      });
+    } catch (error) {
+      console.log('error');
+      setIsLoadingInside(false);
+    }
   };
-    setSearchQuery(searchText)
+
+  const onPickFromCamera = () => {
+    console.log('onPickImage');
+    let options = {
+      mediaType: 'photo',
+      maxWidth: 500,
+      maxHeight: 500,
+      quality: 0.8,
+    };
+    try {
+      launchCamera(options, res => {
+        if (
+          res?.assets != undefined &&
+          res?.assets != null &&
+          res?.assets[0]?.uri != null
+        ) {
+          console.log(res?.assets[0]?.uri);
+          uploadImage(res?.assets[0]?.uri);
+        }
+      });
+    } catch (error) {
+      console.log('error');
+      setIsLoadingInside(false);
+    }
+  };
+
+  const uploadImage = async (uri, type) => {
+    setShowBottomSheet(false);
+    setIsLoading(true);
+    let key = parseInt(Math.random()*100);
+    const filename = uri.substring(uri.lastIndexOf('/images') + 1);
+    const data = await RNFS.readFile(uri, 'base64');
+    const imageRef = storage().ref(filename);
+    await imageRef.putString(data, 'base64');
+    const url = await imageRef.getDownloadURL();
+    console.log('uploading image .....', url);
+    database()
+      .ref(`/images/${selectedId}/${key}`)
+      .update({
+        imageUrl: url,
+      })
+      .then(() => {
+        setIsLoading(false);
+        ToastAndroid.show('Image uploaded successfully!', ToastAndroid.SHORT);
+        console.log('Data set.')});
+        setIsLoading(false);
+    setShowBottomSheet(false);
+  };
+  const onChange = searchText => {
+    const options = {
+      isCaseSensitive: false,
+      threshold: 0.1,
+      keys: ['name', 'type.', 'area', 'address'],
+    };
+    setSearchQuery(searchText);
     const fuseCategory = new Fuse(storesArray, options);
     var temp = fuseCategory.search(searchText);
     let dummyArray = [];
-    temp.forEach((item) => {
+    temp.forEach(item => {
       dummyArray.push(item.item);
     });
     // setSearchData(dummyArray);
-    console.log("searched leads ==", dummyArray);
+    setSearchedLeads(dummyArray);
+    console.log('searched leads ==', dummyArray);
   };
   const renderItem = ({item}) => (
     <View style={styles.storeCard}>
       <View style={styles.storeCardLeft}>
         <Image source={shopIcon} style={styles.storeImage} />
         <View style={{justifyContent: 'center'}}>
-          <Text style={styles.storeName}>{item[1].name}</Text>
+          <Text style={styles.storeName}>{item.name}</Text>
           <Text style={styles.storeDetails}>
-            {item[1].type} || {item[1].area}{' '}
+            {item.type} || {item.area}{' '}
           </Text>
         </View>
       </View>
-      <View style={styles.storeCardRight}>
+      <TouchableOpacity
+        style={styles.storeCardRight}
+        onPress={() => {
+          setShowBottomSheet(true);
+          setSelectedId(item.id);
+        }}>
         <Image source={uploadIcon} style={styles.storeImage} />
-      </View>
+      </TouchableOpacity>
     </View>
   );
 
   return (
     <>
-    <View>
-      <View style={styles.topContainer}>
-        <Text style={styles.welcome}>Welcome, Ishan</Text>
-        <Image source={logoutIcon} style={styles.logout} />
-      </View>
-      <Searchbar
-        placeholder="Search"
-        onChangeText={onChange}
-        value={searchQuery}
-        style={styles.search}
-        iconColor='#545454'
-      />
-      {storesArray.length > 0 || isLoading? (
-        <FlatList
-          data={storesArray}
-          renderItem={renderItem}
-          keyExtractor={item => item.id}
+      <View>
+        <View style={styles.topContainer}>
+          <Text style={styles.welcome}>Hi, Ram</Text>
+          <Image source={logoutIcon} style={styles.logout} />
+        </View>
+        <Searchbar
+          placeholder="Search"
+          onChangeText={onChange}
+          value={searchQuery}
+          style={styles.search}
         />
-      ) : (
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center",marginHorizontal:20}}>
-       <Image source={nostores} style={{marginBottom:30, height:250, width:250}}/>
-        <Text style={{ color: '#757575',textAlign:'center',lineHeight:22,fontSize:16}}>
-         Oops! No stores found.
-        </Text>
+        {searchedLeads.length > 0 ? (
+          <Text style={styles.title}>{searchedLeads.length} results</Text>
+        ) : (
+          <Text style={styles.title}>Stores </Text>
+        )}
+        {storesArray.length > 0 || isLoading ? (
+          <FlatList
+            data={searchedLeads.length > 0 ? searchedLeads : storesArray}
+            renderItem={renderItem}
+            keyExtractor={item => item.id}
+          />
+        ) : (
+          <View
+            style={{
+              flex: 1,
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginHorizontal: 20,
+            }}>
+            <Image
+              source={nostores}
+              style={{marginBottom: 30, height: 250, width: 250}}
+            />
+            <Text
+              style={{
+                color: '#757575',
+                textAlign: 'center',
+                lineHeight: 22,
+                fontSize: 16,
+              }}>
+              Oops! No stores found.
+            </Text>
+          </View>
+        )}
       </View>
-      )}
-    </View>
-    <Loader isLoading={isLoading}/>
+      <Loader isLoading={isLoading} />
+      <BottomSheet modalProps={{}} isVisible={showBottomSheet}>
+        <View
+          style={{
+            backgroundColor: '#ffffff',
+            borderTopLeftRadius: 16,
+            borderTopRightRadius: 16,
+          }}>
+          <View
+            style={{
+              backgroundColor: '#EE5253',
+              padding: 10,
+              borderTopLeftRadius: 16,
+              borderTopRightRadius: 16,
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+            }}>
+            <Text
+              style={{
+                textAlign: 'center',
+                color: '#ffffff',
+                fontSize: 18,
+                fontWeight: '800',
+              }}>
+              Upload Image
+            </Text>
+            <Icon
+              onPress={() => setShowBottomSheet(false)}
+              name="close"
+              size={20}
+              style={{alignSelf: 'flex-end'}}
+              color="#ffffff"
+            />
+          </View>
+          <TouchableOpacity onPress={() => onPickImage()}>
+            <Text style={styles.bottomSheetOption}>
+              Choose picture from gallery
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => onPickFromCamera()}>
+            <Text style={styles.bottomSheetOption}>Click from camera</Text>
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
     </>
   );
 }
@@ -182,5 +331,20 @@ const styles = StyleSheet.create({
     height: 40,
     alignSelf: 'center',
     marginHorizontal: 16,
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginHorizontal: 12,
+    color: '#000000',
+  },
+  bottomSheetOption: {
+    textAlign: 'center',
+    padding: 20,
+    color: '#999999',
+    fontWeight: '700',
+    fontSize: 14,
+    borderBottomColor: '#000000',
+    borderBottomWidth: 1,
   },
 });
