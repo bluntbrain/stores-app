@@ -1,7 +1,17 @@
 # stores-app
-A simple Mobile Application to collect Images from Stores.
+A simple Mobile Application to collect Images from Stores.<br/>
 
-![634unh](https://user-images.githubusercontent.com/34113569/151647878-296c3c43-aed0-4974-af17-5e08315a6c90.gif)
+![Screen Recording 2022-01-30 at 12 08 34 PM](https://user-images.githubusercontent.com/34113569/151689609-6824d592-e046-4bac-93b3-0c9d6898b82c.gif)
+
+</br>Context Demo and User Login demo</br>
+
+![Screen Recording 2022-01-30 at 12 10 07 PM](https://user-images.githubusercontent.com/34113569/151689600-054c2f84-045c-4180-8196-d779cbe19f4c.gif)
+
+</br>Upload Image demo with 2 options "Choose from camera" and "Choose from Gallery:</br>
+
+![Screen Recording 2022-01-30 at 12 09 36 PM](https://user-images.githubusercontent.com/34113569/151689607-b3d060f5-43de-46b9-a909-b3134ea1b357.gif)
+
+</br>Dyamic Search demo, user can search any store by entering the store name, location, type etc.</br>
 
 
 Cases handled<br/>
