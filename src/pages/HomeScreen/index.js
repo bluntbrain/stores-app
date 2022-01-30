@@ -14,12 +14,16 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import RNFS from 'react-native-fs';
 import {launchImageLibrary, launchCamera} from 'react-native-image-picker';
 import storage from '@react-native-firebase/storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 //icons
 import logoutIcon from '../../assets/icons/logout.png';
 import uploadIcon from '../../assets/icons/upload.png';
 import shopIcon from '../../assets/icons/shop.png';
 import nostores from '../../assets/images/nostores.png';
+
+//context
+import {AuthContext} from '../../components/context';
 
 import Fuse from 'fuse.js';
 import {Searchbar} from 'react-native-paper';
@@ -32,31 +36,51 @@ export default function HomeScreen() {
   const [selectedId, setSelectedId] = React.useState('');
   const [storesArray, setStoresArray] = React.useState([]);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [currentUSer, setCurrentUser] = React.useState(null);
+
+  const {signOut} = React.useContext(AuthContext);
 
   useEffect(() => {
-    database()
-      .ref('/stores')
-      .once('value')
-      .then(snapshot => {
-        let dummyArray = snapshot.val();
-        // console.log('User data: ', snapshot.val());
-        var result = Object.keys(snapshot.val()).map(key => [
-          key,
-          snapshot.val()[key],
-        ]);
-        let allStores = Object.values(snapshot.val());
-        allStores.forEach((item, index) => {
-          item.id = result[index][0];
-        });
+    getCurrentUser().then(resUser => {
+      console.log('user in home ===', resUser);
+      let parsedUser = JSON.parse(resUser)
+      setCurrentUser(parsedUser)
+      database()
+        .ref('/stores')
+        .once('value')
+        .then(snapshot => {
+          let dummyArray = [];
+          var result = Object.keys(snapshot.val()).map(key => [
+            key,
+            snapshot.val()[key],
+          ]);
+          let allStores = Object.values(snapshot.val());
+          allStores.forEach((item, index) => {
+            item.id = result[index][0];
+          });
 
-        console.log('User data: ', allStores);
-        setStoresArray(allStores);
-        setIsLoading(false);
-      });
+          allStores.forEach(item => {
+            if (parsedUser?.stores.includes(item.id)) {
+              dummyArray.push(item);
+            }
+          });
+
+          console.log('User data: ', dummyArray);
+          setStoresArray(dummyArray);
+          setIsLoading(false);
+        });
+    });
+
     setTimeout(() => {
       setIsLoading(false);
     }, 3000);
   }, []);
+
+  const getCurrentUser = async () => {
+    return await AsyncStorage.getItem('userToken');
+    console.log('user in home ===', user);
+    setCurrentUser(user);
+  };
 
   const onPickImage = () => {
     console.log('onPickImage');
@@ -111,7 +135,7 @@ export default function HomeScreen() {
   const uploadImage = async (uri, type) => {
     setShowBottomSheet(false);
     setIsLoading(true);
-    let key = parseInt(Math.random()*100);
+    let key = parseInt(Math.random() * 100);
     const filename = uri.substring(uri.lastIndexOf('/images') + 1);
     const data = await RNFS.readFile(uri, 'base64');
     const imageRef = storage().ref(filename);
@@ -126,15 +150,16 @@ export default function HomeScreen() {
       .then(() => {
         setIsLoading(false);
         ToastAndroid.show('Image uploaded successfully!', ToastAndroid.SHORT);
-        console.log('Data set.')});
-        setIsLoading(false);
+        console.log('Data set.');
+      });
+    setIsLoading(false);
     setShowBottomSheet(false);
   };
   const onChange = searchText => {
     const options = {
       isCaseSensitive: false,
       threshold: 0.1,
-      keys: ['name', 'type.', 'area', 'address'],
+      keys: ['name', 'type', 'area', 'address'],
     };
     setSearchQuery(searchText);
     const fuseCategory = new Fuse(storesArray, options);
@@ -173,8 +198,10 @@ export default function HomeScreen() {
     <>
       <View>
         <View style={styles.topContainer}>
-          <Text style={styles.welcome}>Hi, Ram</Text>
-          <Image source={logoutIcon} style={styles.logout} />
+          <Text style={styles.welcome}>Hi, {currentUSer?.name}</Text>
+          <TouchableOpacity onPress={() => signOut()}>
+            <Image source={logoutIcon} style={styles.logout} />
+          </TouchableOpacity>
         </View>
         <Searchbar
           placeholder="Search"

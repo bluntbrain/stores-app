@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, {useState, useEffect} from 'react';
 import {
   StyleSheet,
   Text,
@@ -7,60 +7,57 @@ import {
   TextInput,
   Button,
   TouchableOpacity,
-} from "react-native";
-import { primaryColor } from "./src/config/constants";
-import HomeScreen from "./src/pages/HomeScreen";
+  ActivityIndicator,
+  ToastAndroid,
+} from 'react-native';
+import {primaryColor} from './src/config/constants';
+import HomeScreen from './src/pages/HomeScreen';
+import LoginScreen from './src/pages/LoginScreen/index';
+import 'react-native-gesture-handler';
+import {NavigationContainer} from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import {AuthContext} from './src/components/context';
 
 export default function App() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [userToken, setUserToken] = useState(null);
+  const [password, setPassword] = useState('');
+
+  useEffect(() => {
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
+  }, []);
+
+  const authContext = React.useMemo(
+    () => ({
+      signIn: async foundUser => {
+        setUserToken('fgkj');
+        setIsLoading(false);
+      },
+      signOut: async () => {
+        setUserToken(null);
+        setIsLoading(false);
+        ToastAndroid.show('Signout success!', ToastAndroid.LONG)
+      },
+    }),
+    [],
+  );
+
+  if (isLoading) {
+    return (
+      <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+        <ActivityIndicator size="large" color={'#000000'} />
+      </View>
+    );
+  }
 
   return (
-    <HomeScreen/>
+    <AuthContext.Provider value={authContext}>
+      <NavigationContainer>
+        {userToken != null ? <HomeScreen /> : <LoginScreen />}
+      </NavigationContainer>
+    </AuthContext.Provider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  image: {
-    marginBottom: 40,
-  },
-
-  inputView: {
-    backgroundColor: "#FFC0CB",
-    borderRadius: 30,
-    width: "70%",
-    height: 45,
-    marginBottom: 20,
-
-    // alignItems: "center",
-  },
-
-  TextInput: {
-    height: 50,
-    flex: 1,
-    padding: 10,
-    marginLeft: 20,
-  },
-
-  forgot_button: {
-    height: 30,
-    marginBottom: 30,
-  },
-
-  loginBtn: {
-    width: "80%",
-    borderRadius: 8,
-    height: 50,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 40,
-    backgroundColor: primaryColor,
-  },
-});
